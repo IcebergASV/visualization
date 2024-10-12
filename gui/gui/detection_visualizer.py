@@ -1,22 +1,31 @@
 import rclpy
 from rclpy.node import Node
-from yolov8_msgs.msg import DetectionArray, Detection  # Adjust import based on your package structure
+from yolov8_msgs.msg import DetectionArray  # Adjust import based on your package structure
 import tkinter as tk
+import time
 
 class DetectionVisualizer(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("YOLO Detection Visualizer")
-        self.geometry("640x320")
+        self.geometry("640x480")
         self.canvas = tk.Canvas(self, width=640, height=480, bg="white")
         self.canvas.pack()
         self.detections = []
+
+        # Status indicators
+        self.warning_signal = None  # This will hold the reference to the warning signal
+        self.last_message_time = time.time()  # Track the last message time
+        self.check_status()  # Start the status check
 
     def update_detections(self, detections):
         self.canvas.delete("all")  # Clear previous drawings
         self.detections = detections
         for detection in self.detections:
             self.draw_bounding_box(detection)
+
+        self.last_message_time = time.time()  # Update last message time
+        self.clear_warning_signal()  # Clear the warning signal when a message is received
 
     def draw_bounding_box(self, detection):
         # Get bounding box coordinates
@@ -53,6 +62,24 @@ class DetectionVisualizer(tk.Tk):
         label = "B" if "buoy" in class_name else "M" if "marker" in class_name else ""
         return color, label
 
+    def clear_warning_signal(self):
+        if self.warning_signal:
+            self.canvas.delete(self.warning_signal)
+            self.warning_signal = None  # Reset the warning signal
+
+    def show_warning_signal(self):
+        if not self.warning_signal:  # Only create the warning signal if it doesn't exist
+            self.warning_signal = self.canvas.create_oval(10, 10, 30, 30, fill="red", outline="black")
+
+    def check_status(self):
+        current_time = time.time()
+        if current_time - self.last_message_time > 1.0:
+            self.show_warning_signal()  # Show warning if no message in 1 second
+        else:
+            self.clear_warning_signal()  # Clear warning if receiving messages
+        
+        self.after(100, self.check_status)  # Check status every 100ms
+
 class DetectionNode(Node):
     def __init__(self, visualizer):
         super().__init__('detection_listener')
@@ -67,7 +94,7 @@ class DetectionNode(Node):
         )
 
     def detection_callback(self, msg):
-        self.get_logger().info(f"Received {len(msg.detections)} detections.")
+        self.get_logger().debug(f"Received {len(msg.detections)} detections.")
         self.visualizer.update_detections(msg.detections)
 
 def main(args=None):

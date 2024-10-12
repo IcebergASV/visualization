@@ -14,8 +14,9 @@ class DetectionVisualizer(tk.Tk):
         self.detections = []
 
         # Status indicators
-        self.warning_signal = None  # This will hold the reference to the warning signal
+        self.warning_message = self.canvas.create_text(10, 10, text="", fill="red", anchor="nw")  # Initialize warning message
         self.last_message_time = time.time()  # Track the last message time
+        self.topic_name = "/yolo/detections"  # Topic name for display
         self.check_status()  # Start the status check
 
     def update_detections(self, detections):
@@ -44,7 +45,8 @@ class DetectionVisualizer(tk.Tk):
 
         # Draw rectangle and label
         self.canvas.create_rectangle(top_left_x, top_left_y, top_left_x + width, top_left_y + height, fill=color, outline="black")
-        self.canvas.create_text(center_x, center_y, text=label, fill="black")
+        label_color = "black" if class_name == "yellow_buoy" else "white"
+        self.canvas.create_text(center_x, center_y, text=label, fill=label_color)
 
     def get_color_and_label(self, class_name):
         color_map = {
@@ -63,13 +65,10 @@ class DetectionVisualizer(tk.Tk):
         return color, label
 
     def clear_warning_signal(self):
-        if self.warning_signal:
-            self.canvas.delete(self.warning_signal)
-            self.warning_signal = None  # Reset the warning signal
+        self.canvas.itemconfig(self.warning_message, text="")  # Clear the warning message
 
     def show_warning_signal(self):
-        if not self.warning_signal:  # Only create the warning signal if it doesn't exist
-            self.warning_signal = self.canvas.create_oval(10, 10, 30, 30, fill="red", outline="black")
+        self.canvas.itemconfig(self.warning_message, text=f"No messages published to {self.topic_name}")  # Show warning message
 
     def check_status(self):
         current_time = time.time()

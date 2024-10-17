@@ -95,6 +95,9 @@ class SetpointNode(Node):
         self.behaviour_label = self.gui.add_label("Behaviour Status: Unknown")
         self.search_label = self.gui.add_label("Search Status: Unknown")
 
+        self.previous_behaviour_status = None
+        self.previous_search_status = None
+
     def local_callback(self, msg):
         x = msg.pose.position.x
         y = msg.pose.position.y
@@ -131,14 +134,17 @@ class SetpointNode(Node):
         for line in data:
             if 'BEHAVIOUR STATUS' in line:
                 behaviour_status = line.split(': ')[1]
-                self.get_logger().debug(f"Behaviour Status: {behaviour_status}")
-                self.gui.update_label(self.behaviour_label, f"Behaviour Status: {behaviour_status}", flash=True)
+                if behaviour_status != self.previous_behaviour_status:
+                    self.get_logger().debug(f"Behaviour Status changed: {behaviour_status}")
+                    self.gui.update_label(self.behaviour_label, f"Behaviour Status: {behaviour_status}", flash=True)
+                    self.previous_behaviour_status = behaviour_status  # Update previous status
             elif 'SEARCH STATUS' in line:
                 search_status = line.split(': ')[1]
-                self.get_logger().debug(f"Search Status: {search_status}")
-                self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
-
-
+                if search_status != self.previous_search_status:
+                    self.get_logger().debug(f"Search Status changed: {search_status}")
+                    self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
+                    self.previous_search_status = search_status  # Update previous status
+                    
 def main(args=None):
     rclpy.init(args=args)
     

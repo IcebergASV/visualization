@@ -5,6 +5,7 @@ from geometry_msgs.msg import PoseStamped
 from geographic_msgs.msg import GeoPoseStamped
 from mavros_msgs.msg import State  # Import State message for mode
 from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import String
 import tkinter as tk
 
 class GUI(tk.Tk):
@@ -77,12 +78,22 @@ class SetpointNode(Node):
             qos_profile
         )
 
+        # Subscription for Behavior and Search Status
+        self.status_subscription = self.create_subscription(
+            String,
+            '/njord_tasks/maneuvering/status',
+            self.status_callback,
+            qos_profile
+        )
+
         # Add labels to GUI
         self.local_coords_label = self.gui.add_label("Local Setpoint: X: 0.0, Y: 0.0")
         self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0, Alt: 0.0")
         self.local_position_label = self.gui.add_label("Local Position: X: 0.0, Y: 0.0")
         self.global_position_label = self.gui.add_label("Global Position: Lat: 0.0, Lon: 0.0")
         self.mode_label = self.gui.add_label("Mode: Unknown")
+        self.behaviour_label = self.gui.add_label("Behaviour Status: Unknown")
+        self.search_label = self.gui.add_label("Search Status: Unknown")
 
     def local_callback(self, msg):
         x = msg.pose.position.x
@@ -113,6 +124,20 @@ class SetpointNode(Node):
         mode = msg.mode  # Get the mode
         self.get_logger().debug(f"Received state: Mode: {mode}")
         self.gui.update_label(self.mode_label, f"Mode: {mode}", flash=False)
+
+    def status_callback(self, msg):
+        # Parse the status message
+        data = msg.data.split('\n')
+        for line in data:
+            if 'BEHAVIOUR STATUS' in line:
+                behaviour_status = line.split(': ')[1]
+                self.get_logger().debug(f"Behaviour Status: {behaviour_status}")
+                self.gui.update_label(self.behaviour_label, f"Behaviour Status: {behaviour_status}", flash=True)
+            elif 'SEARCH STATUS' in line:
+                search_status = line.split(': ')[1]
+                self.get_logger().debug(f"Search Status: {search_status}")
+                self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
+
 
 def main(args=None):
     rclpy.init(args=args)

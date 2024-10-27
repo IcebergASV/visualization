@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from geometry_msgs.msg import PoseStamped
 from geographic_msgs.msg import GeoPoseStamped
-from mavros_msgs.msg import State  # Import State message for mode
+from mavros_msgs.msg import State
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 import tkinter as tk
@@ -12,12 +12,13 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Debug GUI")
-        self.geometry("400x400")  # Increased size to accommodate more labels
+        self.geometry("600x250")
         self.grid_labels = []
+        self.status_labels = {}
 
     def add_label(self, text):
-        label = tk.Label(self, text=text, font=("Arial", 14))
-        label.grid(row=len(self.grid_labels), column=0, pady=5)
+        label = tk.Label(self, text=text, font=("Arial", 14), anchor="w", justify="left")
+        label.grid(row=len(self.grid_labels), column=0, pady=5, sticky="w")  # Left column
         self.grid_labels.append(label)
         return label
 
@@ -25,9 +26,21 @@ class GUI(tk.Tk):
         label.config(text=text)
         if flash:
             label.config(fg="green")
-            self.after(500, lambda: label.config(fg="black"))  # Flash green for 500ms
+            self.after(500, lambda: label.config(fg="black"))
         else:
-            label.config(fg="black")  # Keep text black
+            label.config(fg="black")
+
+    def add_status_label(self, node_name, row):
+        node_label = tk.Label(self, text=node_name, font=("Arial", 14))
+        node_label.grid(row=row, column=1, sticky="w", padx=10)  # Right column, align left
+        status_label = tk.Label(self, text="●", font=("Arial", 14), fg="red")
+        status_label.grid(row=row, column=2, padx=5)  # Status indicator in rightmost column
+        self.status_labels[node_name] = status_label
+
+    def update_status(self, node_name, is_running):
+        if node_name in self.status_labels:
+            color = "green" if is_running else "red"
+            self.status_labels[node_name].config(fg=color)
 
 class SetpointNode(Node):
     def __init__(self, gui):
@@ -38,6 +51,16 @@ class SetpointNode(Node):
         qos_profile = QoSProfile(depth=10)
         qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
         
+        self.target_nodes = ["rosbag2_recorder", "maneuvering", "camera", "mavros", "yolov8_node"]
+
+        # Set up node status labels
+        for idx, node_name in enumerate(self.target_nodes, start=len(gui.grid_labels)):
+  
+            gui.add_status_label(node_name, row=idx)
+
+        # Set up timer to check node statuses every second
+        self.node_check_timer = self.create_timer(1.0, self.check_node_statuses)
+
         # Subscription for Local Setpoint
         self.local_subscription = self.create_subscription(
             PoseStamped,
@@ -88,7 +111,7 @@ class SetpointNode(Node):
 
         # Add labels to GUI
         self.local_coords_label = self.gui.add_label("Local Setpoint: X: 0.0, Y: 0.0")
-        self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0, Alt: 0.0")
+        self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0")
         self.local_position_label = self.gui.add_label("Local Position: X: 0.0, Y: 0.0")
         self.global_position_label = self.gui.add_label("Global Position: Lat: 0.0, Lon: 0.0")
         self.mode_label = self.gui.add_label("Mode: Unknown")
@@ -97,6 +120,12 @@ class SetpointNode(Node):
 
         self.previous_behaviour_status = None
         self.previous_search_status = None
+
+    def check_node_statuses(self):
+        active_nodes = self.get_node_names()
+        for node_name in self.target_nodes:
+            is_running = node_name in active_nodes
+            self.gui.update_status(node_name, is_running)
 
     def local_callback(self, msg):
         x = msg.pose.position.x
@@ -107,9 +136,8 @@ class SetpointNode(Node):
     def global_callback(self, msg):
         lat = msg.pose.position.latitude
         lon = msg.pose.position.longitude
-        alt = msg.pose.position.altitude
-        self.get_logger().debug(f"Received global setpoint: Lat: {lat}, Lon: {lon}, Alt: {alt}")
-        self.gui.update_label(self.global_coords_label, f"Global Setpoint: Lat: {lat:.6f}, Lon: {lon:.6f}, Alt: {alt:.2f}", flash=True)
+        self.get_logger().debug(f"Received global setpoint: Lat: {lat}, Lon: {lon}")
+        self.gui.update_label(self.global_coords_label, f"Global Setpoint: Lat: {lat:.6f}, Lon: {lon:.6f}", flash=True)
 
     def local_position_callback(self, msg):
         x = msg.pose.position.x

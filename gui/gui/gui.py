@@ -60,6 +60,16 @@ class SetpointNode(Node):
 
         # Set up timer to check node statuses every second
         self.node_check_timer = self.create_timer(1.0, self.check_node_statuses)
+    
+        # Last message time tracking
+        self.last_local_setpoint_time = self.get_clock().now()
+        self.last_global_setpoint_time = self.get_clock().now()
+        self.last_local_position_time = self.get_clock().now()
+        self.last_global_position_time = self.get_clock().now()
+        self.last_mode_time = self.get_clock().now()
+        self.last_status_time = self.get_clock().now()
+
+        self.message_check_timer = self.create_timer(1.0, self.check_message_statuses)
 
         # Subscription for Local Setpoint
         self.local_subscription = self.create_subscription(
@@ -127,6 +137,24 @@ class SetpointNode(Node):
             is_running = node_name in active_nodes
             self.gui.update_status(node_name, is_running)
 
+    def check_message_statuses(self):
+        current_time = self.get_clock().now()
+
+        # Check elapsed time for each topic and update label color if needed
+        def check_and_update_label(label, last_time):
+            time_since_last_update = (current_time - last_time).nanoseconds
+            if time_since_last_update > 3000000000:  # 1 second in nanoseconds
+                self.gui.update_label(label, label.cget("text"), flash=False)
+                label.config(fg="red")
+            else:
+                label.config(fg="black")
+
+        check_and_update_label(self.local_position_label, self.last_local_position_time)
+        check_and_update_label(self.global_position_label, self.last_global_position_time)
+        check_and_update_label(self.mode_label, self.last_mode_time)
+        check_and_update_label(self.behaviour_label, self.last_status_time)
+        check_and_update_label(self.search_label, self.last_status_time)
+
     def local_callback(self, msg):
         x = msg.pose.position.x
         y = msg.pose.position.y
@@ -144,17 +172,20 @@ class SetpointNode(Node):
         y = msg.pose.position.y
         self.get_logger().debug(f"Received local position: X: {x}, Y: {y}")
         self.gui.update_label(self.local_position_label, f"Local Position: X: {x:.2f}, Y: {y:.2f}", flash=False)
+        self.last_local_position_time = self.get_clock().now()
 
     def global_position_callback(self, msg):
         lat = msg.latitude
         lon = msg.longitude
         self.get_logger().debug(f"Received global position: Lat: {lat}, Lon: {lon}")
         self.gui.update_label(self.global_position_label, f"Global Position: Lat: {lat:.6f}, Lon: {lon:.6f}", flash=False)
+        self.last_global_position_time = self.get_clock().now()
 
     def state_callback(self, msg):
         mode = msg.mode  # Get the mode
         self.get_logger().debug(f"Received state: Mode: {mode}")
         self.gui.update_label(self.mode_label, f"Mode: {mode}", flash=False)
+        self.last_mode_time = self.get_clock().now()
 
     def status_callback(self, msg):
         # Parse the status message
@@ -172,6 +203,7 @@ class SetpointNode(Node):
                     self.get_logger().debug(f"Search Status changed: {search_status}")
                     self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
                     self.previous_search_status = search_status  # Update previous status
+        self.last_status_time = self.get_clock().now()
                     
 def main(args=None):
     rclpy.init(args=args)

@@ -114,7 +114,7 @@ class SetpointNode(Node):
         # Subscription for Behavior and Search Status
         self.status_subscription = self.create_subscription(
             String,
-            '/njord_tasks/maneuvering/status',
+            '/comp_tasks/task/status',
             self.status_callback,
             qos_profile
         )

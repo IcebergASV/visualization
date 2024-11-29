@@ -81,7 +81,7 @@ class SetpointNode(Node):
         
         # Subscription for Global Setpoint
         self.global_subscription = self.create_subscription(
-            NavSatFix,
+            GeoPoseStamped,
             '/mavros/setpoint_position/global',
             self.global_callback,
             qos_profile

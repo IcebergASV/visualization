@@ -4,6 +4,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from geometry_msgs.msg import PoseStamped
 from geographic_msgs.msg import GeoPoseStamped
 from mavros_msgs.msg import State
+from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 import tkinter as tk
@@ -103,6 +104,14 @@ class SetpointNode(Node):
             qos_profile
         )
 
+        # Subscription for Mission Reached
+        self.waypoint_reached_subscription = self.create_subscription(
+            WaypointReached,
+            '/mavros/mission/reached',
+            self.waypoint_reached_callback,
+            qos_profile
+        )
+
         # Subscription for State (Mode)
         self.state_subscription = self.create_subscription(
             State,
@@ -124,6 +133,7 @@ class SetpointNode(Node):
         self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0")
         self.local_position_label = self.gui.add_label("Local Position: X: 0.0, Y: 0.0")
         self.global_position_label = self.gui.add_label("Global Position: Lat: 0.0, Lon: 0.0")
+        self.waypoint_reached_label = self.gui.add_label("Waypoint: Reached")
         self.mode_label = self.gui.add_label("Mode: Unknown")
         self.behaviour_label = self.gui.add_label("Behaviour Status: Unknown")
         self.search_label = self.gui.add_label("Search Status: Unknown")
@@ -180,6 +190,10 @@ class SetpointNode(Node):
         self.get_logger().debug(f"Received global position: Lat: {lat}, Lon: {lon}")
         self.gui.update_label(self.global_position_label, f"Global Position: Lat: {lat:.6f}, Lon: {lon:.6f}", flash=False)
         self.last_global_position_time = self.get_clock().now()
+
+    def waypoint_reached_callback(self, msg):
+        self.get_logger().debug(f"Waypoint Reached")
+        self.gui.update_label(self.waypoint_reached_label, f"Waypoint: Reached", flash=True)
 
     def state_callback(self, msg):
         mode = msg.mode  # Get the mode

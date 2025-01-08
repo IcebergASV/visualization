@@ -13,7 +13,7 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Debug GUI")
-        self.geometry("600x250")
+        self.geometry("600x280")
         self.grid_labels = []
         self.status_labels = {}
 

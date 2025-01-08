@@ -70,8 +70,6 @@ class SetpointNode(Node):
         self.last_mode_time = self.get_clock().now()
         self.last_status_time = self.get_clock().now()
 
-        self.message_check_timer = self.create_timer(1.0, self.check_message_statuses)
-
         # Subscription for Local Setpoint
         self.local_subscription = self.create_subscription(
             PoseStamped,
@@ -230,9 +228,9 @@ def main(args=None):
     # Run the GUI and ROS spinning together
     def ros_spin():
         rclpy.spin_once(node, timeout_sec=0.1)
-        gui.after(100, ros_spin)  # Call this function again after 100ms
+        gui.after(1, ros_spin)  # Call this function again after 1ms
 
-    gui.after(100, ros_spin)  # Start the ROS spinning loop
+    gui.after(1, ros_spin)  # Start the ROS spinning loop
     gui.mainloop()  # Start the GUI event loop
 
     node.destroy_node()

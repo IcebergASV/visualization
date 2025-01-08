@@ -15,9 +15,7 @@ class DetectionVisualizer(tk.Tk):
 
         # Status indicators
         self.warning_message = self.canvas.create_text(10, 10, text="", fill="red", anchor="nw")  # Initialize warning message
-        self.last_message_time = time.time()  # Track the last message time
         self.topic_name = "/yolo/detections"  # Topic name for display
-        self.check_status()  # Start the status check
 
     def update_detections(self, detections):
         self.canvas.delete("all")  # Clear previous drawings
@@ -25,7 +23,6 @@ class DetectionVisualizer(tk.Tk):
         for detection in self.detections:
             self.draw_bounding_box(detection)
 
-        self.last_message_time = time.time()  # Update last message time
         self.clear_warning_signal()  # Clear the warning signal when a message is received
 
     def draw_bounding_box(self, detection):
@@ -68,21 +65,14 @@ class DetectionVisualizer(tk.Tk):
         self.canvas.itemconfig(self.warning_message, text="")  # Clear the warning message
 
     def show_warning_signal(self):
-        self.canvas.itemconfig(self.warning_message, text=f"No messages published to {self.topic_name}")  # Show warning message
-
-    def check_status(self):
-        current_time = time.time()
-        if current_time - self.last_message_time > 1.0:
-            self.show_warning_signal()  # Show warning if no message in 1 second
-        else:
-            self.clear_warning_signal()  # Clear warning if receiving messages
-        
-        self.after(100, self.check_status)  # Check status every 100ms
+        self.canvas.delete("all")  # Clear all existing drawings
+        self.warning_message = self.canvas.create_text(10, 10, text=f"No messages published to {self.topic_name}", fill="red", anchor="nw")
 
 class DetectionNode(Node):
     def __init__(self, visualizer):
         super().__init__('detection_listener')
         self.visualizer = visualizer
+        self.last_message_time = time.time()
 
         # Create a subscription to the /yolo/detections topic
         self.subscription = self.create_subscription(
@@ -92,9 +82,19 @@ class DetectionNode(Node):
             10
         )
 
+        self.status_timer = self.create_timer(1.0, self.check_status)
+
     def detection_callback(self, msg):
         self.get_logger().debug(f"Received {len(msg.detections)} detections.")
         self.visualizer.update_detections(msg.detections)
+        self.last_message_time = time.time()
+
+    def check_status(self):
+        current_time = time.time()
+        if current_time - self.last_message_time > 1.0:
+            self.visualizer.show_warning_signal()  # Show warning if no message in 1 second
+        else:
+            self.visualizer.clear_warning_signal()  # Clear warning if receiving messages
 
 def main(args=None):
     rclpy.init(args=args)

@@ -40,7 +40,7 @@ def main():
         color = "red" if position["label"] == "r" else "green"
         marker = {
             "header": {
-                "frame_id": "odom"  # Replace "map" with your desired frame ID
+                "frame_id": "map"  # Replace "map" with your desired frame ID
             },
             "id": idx,
             "type": 2,  # Sphere

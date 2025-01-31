@@ -16,4 +16,10 @@ def generate_launch_description():
             name='detection_visualizer_node',
             output='screen',
         ),
+        Node(
+            package='gui',
+            executable='params_window',
+            name='param_node',
+            output='screen',
+        ),
     ])

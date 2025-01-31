@@ -1,0 +1,43 @@
+/home/jordyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+running egg_info
+creating ../build/gui/gui.egg-info
+writing ../build/gui/gui.egg-info/PKG-INFO
+writing dependency_links to ../build/gui/gui.egg-info/dependency_links.txt
+writing entry points to ../build/gui/gui.egg-info/entry_points.txt
+writing requirements to ../build/gui/gui.egg-info/requires.txt
+writing top-level names to ../build/gui/gui.egg-info/top_level.txt
+writing manifest file '../build/gui/gui.egg-info/SOURCES.txt'
+reading manifest file '../build/gui/gui.egg-info/SOURCES.txt'
+writing manifest file '../build/gui/gui.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui
+copying gui/gui.py -> /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui
+copying gui/params_window.py -> /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui
+copying gui/detection_visualizer.py -> /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui
+copying gui/__init__.py -> /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui
+running install
+running install_lib
+creating /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui
+copying /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui/gui.py -> /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui
+copying /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui/params_window.py -> /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui
+copying /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui/detection_visualizer.py -> /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui
+copying /home/jordyn/ros2_ws/src/visualization/build/gui/build/lib/gui/__init__.py -> /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui
+byte-compiling /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui/gui.py to gui.cpython-310.pyc
+byte-compiling /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui/params_window.py to params_window.cpython-310.pyc
+byte-compiling /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui/detection_visualizer.py to detection_visualizer.cpython-310.pyc
+byte-compiling /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui/__init__.py to __init__.cpython-310.pyc
+running install_data
+creating /home/jordyn/ros2_ws/src/visualization/install/gui/share/ament_index/resource_index/packages
+copying resource/gui -> /home/jordyn/ros2_ws/src/visualization/install/gui/share/ament_index/resource_index/packages
+copying package.xml -> /home/jordyn/ros2_ws/src/visualization/install/gui/share/gui
+creating /home/jordyn/ros2_ws/src/visualization/install/gui/share/gui/launch
+copying launch/launch.py -> /home/jordyn/ros2_ws/src/visualization/install/gui/share/gui/launch
+running install_egg_info
+Copying ../build/gui/gui.egg-info to /home/jordyn/ros2_ws/src/visualization/install/gui/lib/python3.10/site-packages/gui-0.0.0-py3.10.egg-info
+running install_scripts
+Installing detection_visualizer script to /home/jordyn/ros2_ws/src/visualization/install/gui/lib/gui
+Installing gui script to /home/jordyn/ros2_ws/src/visualization/install/gui/lib/gui
+Installing params_window script to /home/jordyn/ros2_ws/src/visualization/install/gui/lib/gui
+writing list of installed files to '/home/jordyn/ros2_ws/src/visualization/build/gui/install.log'

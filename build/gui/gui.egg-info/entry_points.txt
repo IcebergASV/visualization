@@ -1,4 +1,0 @@
-[console_scripts]
-detection_visualizer = gui.detection_visualizer:main
-gui = gui.gui:main
-params_window = gui.params_window:main

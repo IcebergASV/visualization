@@ -32,12 +32,12 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Parameters GUI")
-        self.geometry("600x280")
+        self.geometry("800x600")
 
         self.label = tk.Label(self, text="Waiting for parameters...", font=("Arial", 14))
         self.label.pack(pady=20)
 
-        self.text_box = tk.Text(self, wrap=tk.WORD, height=10, width=50)
+        self.text_box = tk.Text(self, wrap=tk.WORD, height=25, width=70)
         self.text_box.pack(pady=10)
 
     def update_message(self, message):

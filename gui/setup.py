@@ -22,7 +22,8 @@ setup(
     entry_points={
         'console_scripts': [
             'gui = gui.gui:main',
-            'detection_visualizer = gui.detection_visualizer:main'
+            'detection_visualizer = gui.detection_visualizer:main',
+            'params_window = gui.params_window:main'
         ],
     },
 )

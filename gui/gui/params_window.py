@@ -32,7 +32,7 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Parameters GUI")
-        self.geometry("800x600")
+        self.geometry("300x600")
 
         self.label = tk.Label(self, text="Waiting for parameters...", font=("Arial", 14))
         self.label.pack(pady=20)

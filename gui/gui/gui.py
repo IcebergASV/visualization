@@ -7,6 +7,8 @@ from mavros_msgs.msg import State
 from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
+from lifecycle_msgs.msg import TransitionEvent
+
 import tkinter as tk
 
 class GUI(tk.Tk):
@@ -47,6 +49,8 @@ class SetpointNode(Node):
     def __init__(self, gui):
         super().__init__('setpoint_listener')
         self.gui = gui
+
+       # self.maneuvering_status_set = True
         
         # Define a QoS profile
         qos_profile = QoSProfile(depth=10)
@@ -126,6 +130,14 @@ class SetpointNode(Node):
             qos_profile
         )
 
+
+        self.maneuvering_state_subscription = self.create_subscription(
+            TransitionEvent,
+            '/maneuvering/transition_event',
+            self.maneuvering_state_callback,
+            qos_profile
+        )
+
         # Add labels to GUI
         self.local_coords_label = self.gui.add_label("Local Setpoint: X: 0.0, Y: 0.0")
         self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0")
@@ -143,7 +155,51 @@ class SetpointNode(Node):
         active_nodes = self.get_node_names()
         for node_name in self.target_nodes:
             is_running = node_name in active_nodes
+
+            # If maneuvering is detected as active, fetch its state
+            if node_name == "maneuvering" and is_running:
+                self.get_maneuvering_state()
+
             self.gui.update_status(node_name, is_running)
+
+    def get_maneuvering_state(self):
+
+        state_map = {
+            0: "Unknown",
+            1: "Unconfigured",
+            2: "Inactive",
+            3: "Active",
+            4: "Finalized"
+        }
+
+        # Call the service that provides the lifecycle state of maneuvering
+        from lifecycle_msgs.srv import GetState
+        client = self.create_client(GetState, '/maneuvering/get_state')
+
+        if client.wait_for_service(timeout_sec=2.0):
+            request = GetState.Request()
+            future = client.call_async(request)
+
+            def response_callback(future):
+                if future.result() is not None:
+                    state_id = future.result().current_state.id
+                    state_name = state_map.get(state_id, "Unknown")
+
+                    color_map = {
+                        "Unconfigured": "red",
+                        "Inactive": "yellow",
+                        "Active": "green",
+                        "Finalized": "black"
+                    }
+                    color = color_map.get(state_name, "black")
+
+                    #self.get_logger().info(f"Maneuvering node state fetched: {state_name}")
+                    self.gui.update_status("maneuvering", is_running=True)
+                    self.gui.status_labels["maneuvering"].config(fg=color)
+
+            future.add_done_callback(response_callback)
+        else:
+            self.get_logger().warn("Maneuvering state service not available.")
 
     def check_message_statuses(self):
         current_time = self.get_clock().now()
@@ -192,6 +248,36 @@ class SetpointNode(Node):
     def waypoint_reached_callback(self, msg):
         self.get_logger().debug(f"Waypoint Reached")
         self.gui.update_label(self.waypoint_reached_label, f"Waypoint: Reached", flash=True)
+
+    
+    def maneuvering_state_callback(self, msg):
+        """Callback for handling lifecycle state transitions of the maneuvering node."""
+        state_map = {
+            0: "Unknown",      # Unknown state
+            1: "Unconfigured", # Node is unconfigured
+            2: "Inactive",     # Node is inactive
+            3: "Active",       # Node is active
+            4: "Finalized"     # Node is finalized (shutting down)
+        }
+
+        new_state = msg.goal_state.id
+        state_name = state_map.get(new_state, "Unknown")
+
+        # Change color based on the state
+        color_map = {
+            "Unconfigured": "red",
+            "Inactive": "yellow",
+            "Active": "green",
+            "Finalized": "black"
+        }
+
+        color = color_map.get(state_name, "black")
+
+        self.get_logger().info(f"Maneuvering node state changed to: {state_name}")
+
+        # Update GUI indicator
+        self.gui.update_status("maneuvering", is_running=True)
+        self.gui.status_labels["maneuvering"].config(fg=color)
 
     def state_callback(self, msg):
         mode = msg.mode  # Get the mode

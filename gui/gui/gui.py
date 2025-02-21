@@ -8,6 +8,7 @@ from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 import tkinter as tk
+import signal
 
 class GUI(tk.Tk):
     def __init__(self):
@@ -221,20 +222,31 @@ def main(args=None):
     rclpy.init(args=args)
     
     gui = GUI()  # Create the GUI
-
-    # Initialize the ROS node
-    node = SetpointNode(gui)
+    node = SetpointNode(gui)  # Initialize ROS Node
     
-    # Run the GUI and ROS spinning together
     def ros_spin():
-        rclpy.spin_once(node, timeout_sec=0.1)
-        gui.after(1, ros_spin)  # Call this function again after 1ms
+        if rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+            gui.after(1, ros_spin)
 
-    gui.after(1, ros_spin)  # Start the ROS spinning loop
-    gui.mainloop()  # Start the GUI event loop
+    def signal_handler(sig, frame):
+        print("Shutting down...")
+        node.destroy_node()
+        if rclpy.ok():  
+            rclpy.shutdown()
+        gui.quit()  # Close the GUI 
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    gui.after(1, ros_spin)
+    try:
+        gui.mainloop()
+    except KeyboardInterrupt:
+        signal_handler(None, None)  # Ensure a clean shutdown
 
     node.destroy_node()
-    rclpy.shutdown()
+    if rclpy.ok():
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

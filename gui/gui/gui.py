@@ -15,7 +15,7 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Debug GUI")
-        self.geometry("600x280")
+        self.geometry("600x320")
         self.grid_labels = []
         self.status_labels = {}
 
@@ -56,7 +56,7 @@ class SetpointNode(Node):
         qos_profile = QoSProfile(depth=10)
         qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
         
-        self.target_nodes = ["rosbag2_recorder", "maneuvering", "camera", "mavros", "yolov8_node"]
+        self.target_nodes = ["rosbag2_recorder", "maneuvering", "speed", "camera", "mavros", "yolov8_node"]
 
         # Set up node status labels
         for idx, node_name in enumerate(self.target_nodes, start=len(gui.grid_labels)):
@@ -138,6 +138,13 @@ class SetpointNode(Node):
             qos_profile
         )
 
+        self.speed_state_subscription = self.create_subscription(
+            TransitionEvent,
+            '/speed/transition_event',
+            self.speed_state_callback,
+            qos_profile
+        )
+
         # Add labels to GUI
         self.local_coords_label = self.gui.add_label("Local Setpoint: X: 0.0, Y: 0.0")
         self.global_coords_label = self.gui.add_label("Global Setpoint: Lat: 0.0, Lon: 0.0")
@@ -147,9 +154,11 @@ class SetpointNode(Node):
         self.mode_label = self.gui.add_label("Mode: Unknown")
         self.behaviour_label = self.gui.add_label("Behaviour Status: Unknown")
         self.search_label = self.gui.add_label("Search Status: Unknown")
+        self.state_label = self.gui.add_label("State: Unknown")
 
         self.previous_behaviour_status = None
         self.previous_search_status = None
+        self.previous_state_status = None
 
     def check_node_statuses(self):
         active_nodes = self.get_node_names()
@@ -160,10 +169,13 @@ class SetpointNode(Node):
             if node_name == "maneuvering" and is_running:
                 self.get_maneuvering_state()
 
+            # If speed is detected as active, fetch its state
+            if node_name == "speed" and is_running:
+                self.get_speed_state()
+
             self.gui.update_status(node_name, is_running)
 
     def get_maneuvering_state(self):
-
         state_map = {
             0: "Unknown",
             1: "Unconfigured",
@@ -193,13 +205,49 @@ class SetpointNode(Node):
                     }
                     color = color_map.get(state_name, "black")
 
-                    #self.get_logger().info(f"Maneuvering node state fetched: {state_name}")
                     self.gui.update_status("maneuvering", is_running=True)
                     self.gui.status_labels["maneuvering"].config(fg=color)
 
             future.add_done_callback(response_callback)
         else:
             self.get_logger().warn("Maneuvering state service not available.")
+
+    def get_speed_state(self):
+        state_map = {
+            0: "Unknown",
+            1: "Unconfigured",
+            2: "Inactive",
+            3: "Active",
+            4: "Finalized"
+        }
+
+        # Call the service that provides the lifecycle state of speed
+        from lifecycle_msgs.srv import GetState
+        client = self.create_client(GetState, '/speed/get_state')
+
+        if client.wait_for_service(timeout_sec=2.0):
+            request = GetState.Request()
+            future = client.call_async(request)
+
+            def response_callback(future):
+                if future.result() is not None:
+                    state_id = future.result().current_state.id
+                    state_name = state_map.get(state_id, "Unknown")
+
+                    color_map = {
+                        "Unconfigured": "red",
+                        "Inactive": "yellow",
+                        "Active": "green",
+                        "Finalized": "black"
+                    }
+                    color = color_map.get(state_name, "black")
+
+                    self.gui.update_status("speed", is_running=True)
+                    self.gui.status_labels["speed"].config(fg=color)
+
+            future.add_done_callback(response_callback)
+        else:
+            self.get_logger().warn("Speed state service not available.")
 
     def check_message_statuses(self):
         current_time = self.get_clock().now()
@@ -218,6 +266,7 @@ class SetpointNode(Node):
         check_and_update_label(self.mode_label, self.last_mode_time)
         check_and_update_label(self.behaviour_label, self.last_status_time)
         check_and_update_label(self.search_label, self.last_status_time)
+        check_and_update_label(self.state_label, self.last_status_time)
 
     def local_callback(self, msg):
         x = msg.pose.position.x
@@ -279,6 +328,35 @@ class SetpointNode(Node):
         self.gui.update_status("maneuvering", is_running=True)
         self.gui.status_labels["maneuvering"].config(fg=color)
 
+    def speed_state_callback(self, msg):
+        """Callback for handling lifecycle state transitions of the speed node."""
+        state_map = {
+            0: "Unknown",      # Unknown state
+            1: "Unconfigured", # Node is unconfigured
+            2: "Inactive",     # Node is inactive
+            3: "Active",       # Node is active
+            4: "Finalized"     # Node is finalized (shutting down)
+        }
+
+        new_state = msg.goal_state.id
+        state_name = state_map.get(new_state, "Unknown")
+
+        # Change color based on the state
+        color_map = {
+            "Unconfigured": "red",
+            "Inactive": "yellow",
+            "Active": "green",
+            "Finalized": "black"
+        }
+
+        color = color_map.get(state_name, "black")
+
+        self.get_logger().info(f"Speed node state changed to: {state_name}")
+
+        # Update GUI indicator
+        self.gui.update_status("speed", is_running=True)
+        self.gui.status_labels["speed"].config(fg=color)
+
     def state_callback(self, msg):
         mode = msg.mode  # Get the mode
         self.get_logger().debug(f"Received state: Mode: {mode}")
@@ -301,6 +379,13 @@ class SetpointNode(Node):
                     self.get_logger().debug(f"Search Status changed: {search_status}")
                     self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
                     self.previous_search_status = search_status  # Update previous status
+            elif 'STATE' in line:
+                print("state updated")
+                state_status = line.split(': ')[1]
+                if state_status != self.previous_state_status:
+                    self.get_logger().debug(f"State Status changed: {state_status}")
+                    self.gui.update_label(self.state_label, f"State: {state_status}", flash=True)
+                    self.previous_state_status = state_status  # Update previous status
         self.last_status_time = self.get_clock().now()
                     
 def main(args=None):

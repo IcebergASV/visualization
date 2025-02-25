@@ -380,7 +380,6 @@ class SetpointNode(Node):
                     self.gui.update_label(self.search_label, f"Search Status: {search_status}", flash=True)
                     self.previous_search_status = search_status  # Update previous status
             elif 'STATE' in line:
-                print("state updated")
                 state_status = line.split(': ')[1]
                 if state_status != self.previous_state_status:
                     self.get_logger().debug(f"State Status changed: {state_status}")

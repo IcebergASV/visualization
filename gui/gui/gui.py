@@ -8,6 +8,7 @@ from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 from lifecycle_msgs.msg import TransitionEvent
+from lifecycle_msgs.srv import GetState
 
 import tkinter as tk
 
@@ -175,44 +176,13 @@ class SetpointNode(Node):
 
             self.gui.update_status(node_name, is_running)
 
-    def get_maneuvering_state(self):
-        state_map = {
-            0: "Unknown",
-            1: "Unconfigured",
-            2: "Inactive",
-            3: "Active",
-            4: "Finalized"
-        }
-
-        # Call the service that provides the lifecycle state of maneuvering
-        from lifecycle_msgs.srv import GetState
-        client = self.create_client(GetState, '/maneuvering/get_state')
-
-        if client.wait_for_service(timeout_sec=2.0):
-            request = GetState.Request()
-            future = client.call_async(request)
-
-            def response_callback(future):
-                if future.result() is not None:
-                    state_id = future.result().current_state.id
-                    state_name = state_map.get(state_id, "Unknown")
-
-                    color_map = {
-                        "Unconfigured": "red",
-                        "Inactive": "yellow",
-                        "Active": "green",
-                        "Finalized": "black"
-                    }
-                    color = color_map.get(state_name, "black")
-
-                    self.gui.update_status("maneuvering", is_running=True)
-                    self.gui.status_labels["maneuvering"].config(fg=color)
-
-            future.add_done_callback(response_callback)
-        else:
-            self.get_logger().warn("Maneuvering state service not available.")
-
     def get_speed_state(self):
+        self.get_node_state("speed")
+            
+    def get_maneuvering_state(self):
+        self.get_node_state("maneuvering")
+
+    def get_node_state(self, node_name):
         state_map = {
             0: "Unknown",
             1: "Unconfigured",
@@ -221,9 +191,8 @@ class SetpointNode(Node):
             4: "Finalized"
         }
 
-        # Call the service that provides the lifecycle state of speed
-        from lifecycle_msgs.srv import GetState
-        client = self.create_client(GetState, '/speed/get_state')
+
+        client = self.create_client(GetState, f'/{node_name}/get_state')
 
         if client.wait_for_service(timeout_sec=2.0):
             request = GetState.Request()
@@ -242,12 +211,13 @@ class SetpointNode(Node):
                     }
                     color = color_map.get(state_name, "black")
 
-                    self.gui.update_status("speed", is_running=True)
-                    self.gui.status_labels["speed"].config(fg=color)
+                    self.gui.update_status(node_name, is_running=True)
+                    self.gui.status_labels[node_name].config(fg=color)
 
             future.add_done_callback(response_callback)
         else:
-            self.get_logger().warn("Speed state service not available.")
+            self.get_logger().warn(f"{node_name.capitalize()} state service not available.")
+
 
     def check_message_statuses(self):
         current_time = self.get_clock().now()

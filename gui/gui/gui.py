@@ -223,8 +223,11 @@ def main(args=None):
     rclpy.init(args=args)
     
     gui = GUI()  # Create the GUI
-    node = SetpointNode(gui)  # Initialize ROS Node
+
+    # Initialize the ROS node
+    node = SetpointNode(gui)
     
+    # Run the GUI and ROS spinning together
     def ros_spin():
         if rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.1)
@@ -235,15 +238,11 @@ def main(args=None):
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    gui.after(1, ros_spin)
-    try:
-        gui.mainloop()
-    except KeyboardInterrupt:
-        signal_handler(None, None)  # Ensure a clean shutdown
+    gui.after(1, ros_spin)  # Start the ROS spinning loop
+    gui.mainloop()  # Start the GUI event loop
 
     node.destroy_node()
-    if rclpy.ok():
-        rclpy.shutdown()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

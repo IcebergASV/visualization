@@ -22,4 +22,8 @@ def generate_launch_description():
             name='param_node',
             output='screen',
         ),
+<<<<<<< HEAD
     ])
+=======
+    ])
+>>>>>>> ab30b42f17c56075fef144c9f909c0aa9ee7fb96

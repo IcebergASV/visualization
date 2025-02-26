@@ -9,6 +9,7 @@ from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 import tkinter as tk
 import signal
+import os
 
 class GUI(tk.Tk):
     def __init__(self):
@@ -230,11 +231,7 @@ def main(args=None):
             gui.after(1, ros_spin)
 
     def signal_handler(sig, frame):
-        print("Shutting down...")
-        node.destroy_node()
-        if rclpy.ok():  
-            rclpy.shutdown()
-        gui.quit()  # Close the GUI 
+        os.kill(os.getpid(), signal.SIGKILL)
 
     signal.signal(signal.SIGINT, signal_handler)
 

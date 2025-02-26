@@ -3,6 +3,8 @@ from rclpy.node import Node
 from yolov8_msgs.msg import DetectionArray  # Adjust import based on your package structure
 import tkinter as tk
 import time
+import signal
+import os
 
 class DetectionVisualizer(tk.Tk):
     def __init__(self):
@@ -107,6 +109,11 @@ def main(args=None):
         rclpy.spin_once(node, timeout_sec=0.1)
         visualizer.after(100, ros_spin)  # Call this function again after 100ms
 
+    def signal_handler(sig, frame):
+        os.kill(os.getpid(), signal.SIGKILL)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    
     visualizer.after(100, ros_spin)  # Start the ROS spinning loop
     visualizer.mainloop()  # Start the GUI event loop
 

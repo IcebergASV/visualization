@@ -43,8 +43,15 @@ class GUI(tk.Tk):
 
     def update_status(self, node_name, is_running):
         if node_name in self.status_labels:
-            color = "green" if is_running else "red"
-            self.status_labels[node_name].config(fg=color)
+            if node_name == "maneuvering" or node_name == 'speed':
+                if not is_running:
+                    color = "red"
+                    self.status_labels[node_name].config(fg=color)
+                return
+            else:
+                color = "green" if is_running else "red"
+                self.status_labels[node_name].config(fg=color)
+            
 
 class SetpointNode(Node):
     def __init__(self, gui):

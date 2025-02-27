@@ -204,7 +204,7 @@ class SetpointNode(Node):
                     state_name = state_map.get(state_id, "Unknown")
 
                     color_map = {
-                        "Unconfigured": "red",
+                        "Unconfigured": "orange",
                         "Inactive": "yellow",
                         "Active": "green",
                         "Finalized": "black"
@@ -313,7 +313,7 @@ class SetpointNode(Node):
 
         # Change color based on the state
         color_map = {
-            "Unconfigured": "red",
+            "Unconfigured": "orange",
             "Inactive": "yellow",
             "Active": "green",
             "Finalized": "black"

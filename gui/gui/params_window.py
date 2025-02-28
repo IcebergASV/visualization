@@ -3,7 +3,8 @@ from rclpy.node import Node
 from rcl_interfaces.srv import ListParameters, GetParameters
 from rcl_interfaces.msg import ParameterEvent
 import tkinter as tk
-
+import signal
+import os
 
 def get_used_value(param_value):
     """Extract the actual value from the parameter object."""
@@ -125,6 +126,11 @@ def main(args=None):
     def ros_spin():
         rclpy.spin_once(node, timeout_sec=0.1)
         gui.after(10, ros_spin)  # Call this function again after 10ms
+
+    def signal_handler(sig, frame):
+        os.kill(os.getpid(), signal.SIGKILL)
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     gui.after(10, ros_spin)  # Start ROS spinning loop
     gui.mainloop()  # Start GUI event loop

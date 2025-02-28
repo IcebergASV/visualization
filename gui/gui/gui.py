@@ -11,6 +11,8 @@ from lifecycle_msgs.msg import TransitionEvent
 from lifecycle_msgs.srv import GetState
 
 import tkinter as tk
+import signal
+import os
 
 class GUI(tk.Tk):
     def __init__(self):
@@ -374,8 +376,14 @@ def main(args=None):
     
     # Run the GUI and ROS spinning together
     def ros_spin():
-        rclpy.spin_once(node, timeout_sec=0.1)
-        gui.after(1, ros_spin)  # Call this function again after 1ms
+        if rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+            gui.after(1, ros_spin)
+
+    def signal_handler(sig, frame):
+        os.kill(os.getpid(), signal.SIGKILL)
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     gui.after(1, ros_spin)  # Start the ROS spinning loop
     gui.mainloop()  # Start the GUI event loop

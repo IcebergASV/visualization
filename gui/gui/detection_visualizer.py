@@ -17,7 +17,7 @@ class DetectionVisualizer(tk.Tk):
 
         # Status indicators
         self.warning_message = self.canvas.create_text(10, 10, text="", fill="red", anchor="nw")  # Initialize warning message
-        self.topic_name = "/yolo/detections"  # Topic name for display
+        self.topic_name = "/icebergcv/detections"  # Topic name for display
 
     def update_detections(self, detections):
         self.canvas.delete("all")  # Clear previous drawings
@@ -49,11 +49,11 @@ class DetectionVisualizer(tk.Tk):
 
     def get_color_and_label(self, class_name):
         color_map = {
-            "yellow_buoy": "yellow",
-            "red_buoy": "red",
-            "green_buoy": "green",
-            "blue_buoy": "blue",
-            "black_buoy": "black",
+            "yellow": "yellow",
+            "red": "red",
+            "green": "green",
+            "blue": "blue",
+            "black": "black",
             "red_marker": "red",
             "green_marker": "green"
         }
@@ -79,7 +79,7 @@ class DetectionNode(Node):
         # Create a subscription to the /yolo/detections topic
         self.subscription = self.create_subscription(
             DetectionArray,
-            '/yolo/detections',
+            '/icebergcv/detections',
             self.detection_callback,
             10
         )

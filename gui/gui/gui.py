@@ -9,6 +9,7 @@ from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 from lifecycle_msgs.msg import TransitionEvent
 from lifecycle_msgs.srv import GetState
+from comp_tasks_interfaces.msg import LabelInt 
 
 import tkinter as tk
 import signal
@@ -18,9 +19,12 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Debug GUI")
-        self.geometry("600x320")
+        self.geometry("600x350")  # Increased height for countdown
         self.grid_labels = []
         self.status_labels = {}
+        self.countdown_label = self.add_label("Countdown: Waiting...")
+        self.remaining_time = 0
+        self.countdown_active = False
 
     def add_label(self, text):
         label = tk.Label(self, text=text, font=("Arial", 14), anchor="w", justify="left")
@@ -53,6 +57,21 @@ class GUI(tk.Tk):
             else:
                 color = "green" if is_running else "red"
                 self.status_labels[node_name].config(fg=color)
+
+    def start_countdown(self, label, time_value):
+        self.update_label(self.countdown_label, f"{label}: {time_value} sec")
+        self.remaining_time = time_value
+        self.countdown_active = True
+        self.update_countdown()
+
+    def update_countdown(self):
+        if self.remaining_time > 0:
+            self.remaining_time -= 1
+            self.countdown_label.config(text=f"{self.countdown_label.cget('text').split(':')[0]}: {self.remaining_time} sec")
+            self.after(1000, self.update_countdown)
+        else:
+            self.countdown_active = False
+            self.countdown_label.config(text="Countdown: Complete")
             
 
 class SetpointNode(Node):
@@ -91,7 +110,13 @@ class SetpointNode(Node):
             self.local_callback,
             qos_profile
         )
-        
+
+        self.timer_subscription = self.create_subscription(
+            LabelInt,
+            '/comp_tasks/task/timer',
+            self.timer_callback,
+            10
+        )
         # Subscription for Global Setpoint
         self.global_subscription = self.create_subscription(
             GeoPoseStamped,
@@ -169,6 +194,16 @@ class SetpointNode(Node):
         self.previous_behaviour_status = None
         self.previous_search_status = None
         self.previous_state_status = None
+    
+    def timer_callback(self, msg: LabelInt):
+        try:
+            label = msg.label  # Assuming 'label' is a string attribute
+            value = msg.value  # Assuming 'value' is an integer attribute
+            self.get_logger().info(f"Received countdown: {label} {value} sec")
+            self.gui.start_countdown(label, value)
+        except Exception as e:
+            self.get_logger().error(f"Failed to parse countdown message: {e}")
+
 
     def check_node_statuses(self):
         active_nodes = self.get_node_names()

@@ -23,8 +23,7 @@ setup(
         'console_scripts': [
             'gui = gui.gui:main',
             'detection_visualizer = gui.detection_visualizer:main',
-            'params_window = gui.params_window:main',
-            'path_window = gui.path_window:main'
+            'params_window = gui.params_window:main'
         ],
     },
 )

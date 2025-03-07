@@ -35,8 +35,8 @@ class GUI(tk.Tk):
         self.title("Parameters GUI")
         self.geometry("300x600")
 
-        self.label = tk.Label(self, text="Waiting for parameters...", font=("Arial", 14))
-        self.label.pack(pady=20)
+        #self.label = tk.Label(self, text="Waiting for parameters...", font=("Arial", 14))
+        #self.label.pack(pady=20)
 
         self.text_box = tk.Text(self, wrap=tk.WORD, height=25, width=70)
         self.text_box.pack(pady=10)

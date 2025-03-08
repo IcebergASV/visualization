@@ -45,7 +45,7 @@ class GUI(tk.Tk):
 
     def update_status(self, node_name, is_running):
         if node_name in self.status_labels:
-            if node_name == "maneuvering" or node_name == 'speed':
+            if node_name == "maneuvering" or node_name == 'speed' or node_name == 'home':
                 if not is_running:
                     color = "red"
                     self.status_labels[node_name].config(fg=color)
@@ -66,7 +66,7 @@ class SetpointNode(Node):
         qos_profile = QoSProfile(depth=10)
         qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
         
-        self.target_nodes = ["rosbag2_recorder", "maneuvering", "speed", "camera", "mavros", "yolov8_node"]
+        self.target_nodes = ["rosbag2_recorder", "maneuvering", "speed", "home", "camera", "mavros", "yolov8_node"]
 
         # Set up node status labels
         for idx, node_name in enumerate(self.target_nodes, start=len(gui.grid_labels)):
@@ -148,6 +148,14 @@ class SetpointNode(Node):
             qos_profile
         )
 
+        self.home_state_subscription = self.create_subscription(
+            TransitionEvent,
+            '/home/transition_event',
+            self.home_state_callback,
+            qos_profile
+        )
+
+
         self.speed_state_subscription = self.create_subscription(
             TransitionEvent,
             '/speed/transition_event',
@@ -183,6 +191,10 @@ class SetpointNode(Node):
             if node_name == "speed" and is_running:
                 self.get_speed_state()
 
+            if node_name == "home" and is_running:
+                self.get_home_state()
+            
+
             self.gui.update_status(node_name, is_running)
 
     def get_speed_state(self):
@@ -190,6 +202,9 @@ class SetpointNode(Node):
             
     def get_maneuvering_state(self):
         self.get_node_state("maneuvering")
+
+    def get_home_state(self):
+        self.get_node_state("home")
 
     def get_node_state(self, node_name):
         state_map = {
@@ -306,6 +321,35 @@ class SetpointNode(Node):
         # Update GUI indicator
         self.gui.update_status("maneuvering", is_running=True)
         self.gui.status_labels["maneuvering"].config(fg=color)
+
+    def home_state_callback(self, msg):
+        """Callback for handling lifecycle state transitions of the home node."""
+        state_map = {
+            0: "Unknown",      # Unknown state
+            1: "Unconfigured", # Node is unconfigured
+            2: "Inactive",     # Node is inactive
+            3: "Active",       # Node is active
+            4: "Finalized"     # Node is finalized (shutting down)
+        }
+
+        new_state = msg.goal_state.id
+        state_name = state_map.get(new_state, "Unknown")
+
+        # Change color based on the state
+        color_map = {
+            "Unconfigured": "red",
+            "Inactive": "yellow",
+            "Active": "green",
+            "Finalized": "black"
+        }
+
+        color = color_map.get(state_name, "black")
+
+        self.get_logger().info(f"home node state changed to: {state_name}")
+
+        # Update GUI indicator
+        self.gui.update_status("home", is_running=True)
+        self.gui.status_labels["home"].config(fg=color)
 
     def speed_state_callback(self, msg):
         """Callback for handling lifecycle state transitions of the speed node."""
